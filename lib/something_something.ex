@@ -25,7 +25,6 @@ end
 defmodule Worker do
 
   def start(name) do
-    Process.register(self(), name)
     work(name)
   end
 
@@ -44,23 +43,16 @@ defmodule LoadBalancer do
   end
 
   def init do
-    spawn_link(Worker, :start, [:worker_one])
-    spawn_link(Worker, :start, [:worker_two])
-    listen(:worker_one)
+    worker_one = spawn_link(Worker, :start, [:worker_one])
+    worker_two = spawn_link(Worker, :start, [:worker_two])
+    listen(worker_one, worker_two)
   end
 
-  defp listen(:worker_one) do
+  defp listen(worker, next_worker) do
     receive do
-      message -> send :worker_one, message
+      message -> send worker, message
     end
-    listen(:worker_two)
-  end
-
-  defp listen(:worker_two) do
-    receive do
-      message -> send :worker_two, message
-    end
-    listen(:worker_one)
+    listen(next_worker, worker)
   end
 
 
