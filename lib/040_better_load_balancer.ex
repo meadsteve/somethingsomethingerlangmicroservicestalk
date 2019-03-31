@@ -7,7 +7,7 @@ defmodule BetterWorker do
   defp work(name) do
     receive do
       :corrupt_payload -> Process.exit(self(), :kill)
-      payload -> IO.write("Worker `#{name}` got the work: #{payload}\n")
+      payload          -> IO.write("Worker `#{name}` got the work: #{payload}\n")
     end
     work(name)
   end
@@ -20,9 +20,14 @@ defmodule BetterLoadBalancer do
   end
 
   def init do
-    {worker_one, _ref} = spawn_monitor(BetterWorker, :start, ["worker one"])
-    {worker_two, _ref} = spawn_monitor(BetterWorker, :start, ["worker two"])
+    worker_one = start_new_worker("worker one")
+    worker_two = start_new_worker("worker two")
     listen(worker_one, worker_two)
+  end
+
+  defp start_new_worker(name \\ "some random worker") do
+    {worker, _ref} = spawn_monitor(BetterWorker, :start, [name])
+    worker
   end
 
   defp listen(worker, other_worker) do
@@ -38,11 +43,4 @@ defmodule BetterLoadBalancer do
         listen(other_worker, worker)
     end
   end
-
-  defp start_new_worker() do
-    {worker, _ref} = spawn_monitor(BetterWorker, :start, ["some restated worker"])
-    worker
-  end
-
-
 end
